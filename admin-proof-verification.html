@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proof Verification - EcoMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../css/admindashboard.css">
+    <style>
+        .proof-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1.75rem;
+        }
+
+        .proof-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .proof-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+
+        .proof-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: var(--admin-bg);
+            cursor: pointer;
+            display: block;
+        }
+
+        .proof-info {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .proof-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .proof-title h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .proof-title p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .proof-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .proof-status.pending_verification {
+            background: var(--warn);
+            color: var(--warn-text);
+        }
+
+        .proof-status.verified {
+            background: var(--light-green);
+            color: var(--dark-green);
+        }
+
+        .proof-status.rejected {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .proof-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            flex: 1;
+        }
+
+        .proof-meta div {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .proof-meta strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .proof-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: auto;
+        }
+
+        .btn-proof {
+            flex: 1;
+            padding: 0.65rem 0.75rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-proof:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-verify {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-verify:hover:not(:disabled) {
+            background: var(--dark-green);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-reject {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .btn-reject:hover:not(:disabled) {
+            background: #FFCDD2;
+            transform: translateY(-2px);
+        }
+
+        .btn-proof i {
+            width: 14px;
+            height: 14px;
+        }
+
+        .filter-box {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 1.75rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-box select,
+        .filter-box input {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .filter-box select:focus,
+        .filter-box input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        .btn-filter {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-filter:hover {
+            background: var(--dark-green);
+            transform: translateY(-2px);
+        }
+
+        .btn-filter i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 3rem 2rem;
+            color: var(--text-muted);
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-state i {
+            width: 48px;
+            height: 48px;
+            opacity: 0.3;
+        }
+
+        @media (max-width: 1300px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .filter-box { flex-direction: column; }
+            .filter-box select,
+            .filter-box input { width: 100%; }
+            .btn-filter { width: 100%; }
+            .proof-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 20, 40, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: modalIn 0.25s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-close {
+            background: var(--admin-bg);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .modal-close i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.25rem;
+            display: block;
+        }
+
+        .modal-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .modal-detail-item span {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .modal-detail-item strong {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-left h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .header-left p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Card action-resolved state */
+        .proof-card .proof-actions.resolving {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-header">
+            <div class="logo-mark">
+                <i data-lucide="leaf"></i>
+            </div>
+            <div class="sidebar-header-info">
+                <h1>EcoMate</h1>
+                <span>LGU Administrator</span>
+            </div>
+        </div>
+
+        <nav class="admin-nav">
+            <a href="admindashboard.html">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="adminreportmngt.html">
+                <i data-lucide="clipboard-list"></i>
+                <span>Reports</span>
+            </a>
+            <a href="adminschedfleet.html">
+                <i data-lucide="truck"></i>
+                <span>Schedule & Fleet</span>
+            </a>
+            <a href="admineducational.html">
+                <i data-lucide="book-open"></i>
+                <span>Educational</span>
+            </a>
+            <a href="adminusermngt.html">
+                <i data-lucide="users"></i>
+                <span>Users</span>
+            </a>
+            <a href="admin-proof-verification.html" class="active">
+                <i data-lucide="camera"></i>
+                <span>Proof Verification</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+
+        <header class="top-header">
+            <button class="hamburger" id="hamburgerBtn">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="header-left">
+                <div>
+                    <h2>Proof Verification</h2>
+                    <p id="liveDateTime">Loading...</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="icon-box notif-wrapper" id="notif-bell">
+                    <i data-lucide="bell"></i>
+                    <div class="badge-dot" id="notifDot" style="display:none;"></div>
+                </div>
+                <div class="avatar-wrapper">
+                    <div class="avatar-circle" id="avatarBtn">
+                        <i data-lucide="user-circle"></i>
+                    </div>
+                    <div class="avatar-dropdown" id="avatarDropdown">
+                        <div class="dropdown-info">
+                            <span>Signed in as</span>
+                            <strong id="adminEmail">Admin</strong>
+                        </div>
+                        <button class="dropdown-item danger" id="dropLogout">
+                            <i data-lucide="log-out"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="stats-row">
+            <div class="metric-panel">
+                <div class="metric-icon"><i data-lucide="file-check"></i></div>
+                <div class="metric-body">
+                    <span>TOTAL PROOFS</span>
+                    <h3 id="stat-total">—</h3>
+                </div>
+            </div>
+            <div class="metric-panel warn">
+                <div class="metric-icon"><i data-lucide="clock"></i></div>
+                <div class="metric-body">
+                    <span>PENDING</span>
+                    <h3 id="stat-pending">—</h3>
+                </div>
+            </div>
+            <div class="metric-panel success">
+                <div class="metric-icon"><i data-lucide="check-circle"></i></div>
+                <div class="metric-body">
+                    <span>VERIFIED</span>
+                    <h3 id="stat-verified">—</h3>
+                </div>
+            </div>
+            <div class="metric-panel info">
+                <div class="metric-icon"><i data-lucide="x-circle"></i></div>
+                <div class="metric-body">
+                    <span>REJECTED</span>
+                    <h3 id="stat-rejected">—</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-box">
+            <select id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="pending_verification">Pending Verification</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+            </select>
+            <select id="filter-worker">
+                <option value="">All Workers</option>
+            </select>
+            <input type="date" id="filter-date">
+            <button class="btn-filter" onclick="applyFilters()">
+                <i data-lucide="search"></i>
+                Filter
+            </button>
+        </div>
+
+        <div id="content">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading proofs...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="modal-overlay" id="imageModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Proof Details</h3>
+                <button class="modal-close" onclick="closeImageModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" class="modal-image" src="" alt="Proof photo">
+                <div class="modal-details" id="modalDetails"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const app = initializeApp({
+            apiKey: "AIzaSyAv-c6-7n2Uf9MK3-5u3dt42HklwGcxixg",
+            authDomain: "ecomate-4c54f.firebaseapp.com",
+            projectId: "ecomate-4c54f",
+            storageBucket: "ecomate-4c54f.firebasestorage.app",
+            messagingSenderId: "626101359921",
+            appId: "1:626101359921:web:c95f7b0fca79ff8ce60c10"
+        });
+
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        lucide.createIcons();
+        document.body.style.visibility = 'hidden';
+
+        let allProofs = [];
+        let workers = new Map();
+        let unsubscribe = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            const userSnap = await getDoc(doc(db, 'users', user.uid));
+            if (!userSnap.exists() || userSnap.data().role !== 'admin') {
+                await signOut(auth);
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.body.style.visibility = 'visible';
+            initProofDashboard();
+        });
+
+        function initProofDashboard() {
+            function updateDateTime() {
+                const now = new Date();
+                document.getElementById('liveDateTime').textContent =
+                    now.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) +
+                    ' · ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+            }
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+
+            const avatarBtn = document.getElementById('avatarBtn');
+            const avatarDropdown = document.getElementById('avatarDropdown');
+            avatarBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                avatarDropdown.classList.toggle('open');
+                lucide.createIcons();
+            });
+            document.addEventListener('click', () => avatarDropdown.classList.remove('open'));
+
+            document.getElementById('dropLogout').addEventListener('click', async () => {
+                await signOut(auth);
+                window.location.href = 'login.html';
+            });
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) document.getElementById('adminEmail').textContent = user.email || 'Admin';
+            });
+
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            hamburgerBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
+                lucide.createIcons();
+            });
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+            });
+
+            loadProofsRealtime();
+        }
+
+        function loadProofsRealtime() {
+            unsubscribe = onSnapshot(
+                query(collection(db, 'reports'), where('status', '==', 'resolved')),
+                async (reportsSnap) => {
+                    allProofs = [];
+
+                    const promises = reportsSnap.docs.map(async (reportDoc) => {
+                        const report = reportDoc.data();
+                        if (!report.lastProofId) return;
+
+                        try {
+                            const proofSnap = await getDoc(
+                                doc(db, 'reports', reportDoc.id, 'proofImages', report.lastProofId)
+                            );
+
+                            if (proofSnap.exists()) {
+                                const proof = proofSnap.data();
+
+                                if (!workers.has(proof.workerUid)) {
+                                    const workerSnap = await getDoc(doc(db, 'users', proof.workerUid));
+                                    if (workerSnap.exists()) {
+                                        workers.set(proof.workerUid, workerSnap.data().fullName);
+                                    }
+                                }
+
+                                allProofs.push({
+                                    reportId: reportDoc.id,
+                                    proofId: report.lastProofId,
+                                    ...proof,
+                                    workerName: workers.get(proof.workerUid),
+                                    reportData: report
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Proof fetch error:', err);
+                        }
+                    });
+
+                    await Promise.all(promises);
+
+                    populateWorkerFilter();
+                    applyFilters();
+                    updateStats();
+                }
+            );
+        }
+
+        function populateWorkerFilter() {
+            const select = document.getElementById('filter-worker');
+            const existingOptions = select.querySelectorAll('option:not(:first-child)');
+            existingOptions.forEach(opt => opt.remove());
+
+            const uniqueWorkers = [...new Set(allProofs.map(p => p.workerUid))];
+            uniqueWorkers.forEach(uid => {
+                const option = document.createElement('option');
+                option.value = uid;
+                option.textContent = workers.get(uid) || 'Unknown';
+                select.appendChild(option);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').textContent = allProofs.length;
+            document.getElementById('stat-pending').textContent = allProofs.filter(p => p.status === 'pending_verification').length;
+            document.getElementById('stat-verified').textContent = allProofs.filter(p => p.status === 'verified').length;
+            document.getElementById('stat-rejected').textContent = allProofs.filter(p => p.status === 'rejected').length;
+        }
+
+        function renderProofs(proofs) {
+            if (proofs.length === 0) {
+                document.getElementById('content').innerHTML = `
+                    <div class="empty-state">
+                        <i data-lucide="inbox"></i>
+                        <p>No proofs match your filters</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            document.getElementById('content').innerHTML = `
+                <div class="proof-grid">
+                    ${proofs.map(proof => buildCardHTML(proof)).join('')}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function buildCardHTML(proof) {
+            const status = proof.status || 'pending_verification';
+            const safeImg = proof.imageBase64.replace(/'/g, "\\'");
+            return `
+                <div class="proof-card" id="card-${proof.reportId}-${proof.proofId}">
+                    <img class="proof-image" src="${proof.imageBase64}" alt="Proof"
+                         onclick="openImageModal('${proof.reportId}', '${proof.proofId}', '${safeImg}')">
+                    <div class="proof-info">
+                        <div class="proof-header">
+                            <div class="proof-title">
+                                <h3>${proof.reportData?.wasteType || 'Report'}</h3>
+                                <p>${proof.workerName || 'Unknown'}</p>
+                            </div>
+                            <span class="proof-status ${status}" id="status-badge-${proof.reportId}-${proof.proofId}">
+                                ${status.replace(/_/g, ' ')}
+                            </span>
+                        </div>
+                        <div class="proof-meta">
+                            <div>
+                                <i data-lucide="map-pin" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+                                <strong>${proof.reportData?.location || 'Unknown'}</strong>
+                            </div>
+                            <div>
+                                <strong>Submitted:</strong> ${new Date(proof.submittedAt.toDate()).toLocaleString('en-PH')}
+                            </div>
+                            <div>
+                                <strong>Accuracy:</strong> ±${Math.round(proof.location?.accuracy || 0)}m
+                            </div>
+                        </div>
+                        <div class="proof-actions" id="actions-${proof.reportId}-${proof.proofId}">
+                            ${status === 'pending_verification' ? `
+                                <button class="btn-proof btn-verify" onclick="verifyProof('${proof.reportId}', '${proof.proofId}', this)">
+                                    <i data-lucide="check-circle-2"></i> Verify
+                                </button>
+                                <button class="btn-proof btn-reject" onclick="rejectProof('${proof.reportId}', '${proof.proofId}', this)">
+                                    <i data-lucide="x-circle"></i> Reject
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Updates a single card's status badge and actions in place — no re-render
+        function updateCardUI(reportId, proofId, newStatus) {
+            const badge = document.getElementById(`status-badge-${reportId}-${proofId}`);
+            const actions = document.getElementById(`actions-${reportId}-${proofId}`);
+
+            if (badge) {
+                badge.className = `proof-status ${newStatus}`;
+                badge.textContent = newStatus.replace(/_/g, ' ');
+            }
+
+            if (actions) {
+                actions.innerHTML = ''; // remove buttons once resolved
+            }
+
+            // Sync in allProofs array
+            const proof = allProofs.find(p => p.reportId === reportId && p.proofId === proofId);
+            if (proof) proof.status = newStatus;
+
+            updateStats();
+        }
+
+        window.applyFilters = function() {
+            const status = document.getElementById('filter-status').value;
+            const worker = document.getElementById('filter-worker').value;
+            const date = document.getElementById('filter-date').value;
+
+            let filtered = allProofs;
+            if (status) filtered = filtered.filter(p => p.status === status);
+            if (worker) filtered = filtered.filter(p => p.workerUid === worker);
+            if (date) {
+                const filterDate = new Date(date);
+                filtered = filtered.filter(p => {
+                    const proofDate = new Date(p.submittedAt.toDate());
+                    return proofDate.toDateString() === filterDate.toDateString();
+                });
+            }
+
+            renderProofs(filtered);
+        };
+
+        window.verifyProof = async function(reportId, proofId, btn) {
+            const actionsEl = document.getElementById(`actions-${reportId}-${proofId}`);
+            if (actionsEl) actionsEl.classList.add('resolving');
+            if (btn) { btn.disabled = true; btn.textContent = 'Verifying…'; }
+
+            try {
+                await updateDoc(doc(db, 'reports', reportId, 'proofImages', proofId), {
+                    status: 'verified',
+                    verifiedAt: new Date(),
+                    verifiedBy: auth.currentUser.uid
+                });
+                updateCardUI(reportId, proofId, 'verified');
+                showToast('✓ Proof verified');
+            } catch (err) {
+                if (actionsEl) actionsEl.classList.remove('resolving');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check-circle-2"></i> Verify'; lucide.createIcons(); }
+                showToast('Failed to verify', 'error');
+            }
+        };
+
+        window.rejectProof = async function(reportId, proofId, btn) {
+            const reason = prompt('Reason for rejection:');
+            if (!reason) return;
+
+            const actionsEl = document.getElementById(`actions-${reportId}-${proofId}`);
+            if (actionsEl) actionsEl.classList.add('resolving');
+            if (btn) { btn.disabled = true; btn.textContent = 'Rejecting…'; }
+
+            try {
+                await updateDoc(doc(db, 'reports', reportId, 'proofImages', proofId), {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectedAt: new Date(),
+                    rejectedBy: auth.currentUser.uid
+                });
+                updateCardUI(reportId, proofId, 'rejected');
+                showToast('Proof rejected');
+            } catch (err) {
+                if (actionsEl) actionsEl.classList.remove('resolving');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="x-circle"></i> Reject'; lucide.createIcons(); }
+                showToast('Failed to reject', 'error');
+            }
+        };
+
+        window.openImageModal = function(reportId, proofId, imageBase64) {
+            const proof = allProofs.find(p => p.reportId === reportId);
+            if (!proof) return;
+
+            document.getElementById('modalImage').src = imageBase64;
+            document.getElementById('modalTitle').textContent = proof.reportData?.wasteType || 'Proof Details';
+            document.getElementById('modalDetails').innerHTML = `
+                <div class="modal-detail-item">
+                    <span>Worker</span>
+                    <strong>${proof.workerName || 'Unknown'}</strong>
+                </div>
+                <div class="modal-detail-item">
+                    <span>Status</span>
+                    <strong>${(proof.status || 'pending').replace(/_/g, ' ').toUpperCase()}</strong>
+                </div>
+                <div class="modal-detail-item">
+                    <span>Location</span>
+                    <strong>${proof.reportData?.location || 'Unknown'}</strong>
+                </div>
+                <div class="modal-detail-item">
+                    <span>GPS Accuracy</span>
+                    <strong>±${Math.round(proof.location?.accuracy || 0)}m</strong>
+                </div>
+                <div class="modal-detail-item" style="grid-column: 1 / -1;">
+                    <span>Submitted</span>
+                    <strong>${new Date(proof.submittedAt.toDate()).toLocaleString('en-PH')}</strong>
+                </div>
+            `;
+            document.getElementById('imageModal').classList.add('open');
+            lucide.createIcons();
+        };
+
+        window.closeImageModal = function() {
+            document.getElementById('imageModal').classList.remove('open');
+        };
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = type === 'success' ? '#2E7D32' : '#C62828';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) unsubscribe();
+        });
+    </script>
+
+</body>
+</html>
